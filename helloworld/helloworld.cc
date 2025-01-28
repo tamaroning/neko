@@ -1,21 +1,3 @@
-//=============================================================================
-// FILE:
-//    HelloWorld.cpp
-//
-// DESCRIPTION:
-//    Visits all functions in a module, prints their names and the number of
-//    arguments via stderr. Strictly speaking, this is an analysis pass (i.e.
-//    the functions are not modified). However, in order to keep things simple
-//    there's no 'print' method here (every analysis pass should implement it).
-//
-// USAGE:
-//    New PM
-//      opt -load-pass-plugin=libHelloWorld.dylib -passes="hello-world" `\`
-//        -disable-output <input-llvm-file>
-//
-//
-// License: MIT
-//=============================================================================
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -23,25 +5,20 @@
 
 using namespace llvm;
 
-//-----------------------------------------------------------------------------
-// HelloWorld implementation
-//-----------------------------------------------------------------------------
-// No need to expose the internals of the pass to the outside world - keep
-// everything in an anonymous namespace.
 namespace {
 
 // This method implements what the pass does
-void visitor(Function &F) {
-  errs() << "(llvm-tutor) Hello from: " << F.getName() << "\n";
-  errs() << "(llvm-tutor)   number of arguments: " << F.arg_size() << "\n";
+void visitor(Function &f) {
+  errs() << "(llvm-tutor) Hello from: " << f.getName() << "\n";
+  errs() << "(llvm-tutor)   number of arguments: " << f.arg_size() << "\n";
 }
 
 // New PM implementation
 struct HelloWorld : PassInfoMixin<HelloWorld> {
   // Main entry point, takes IR unit to run the pass on (&F) and the
   // corresponding pass manager (to be queried if need be)
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    visitor(F);
+  PreservedAnalyses run(Function &f, FunctionAnalysisManager &) {
+    visitor(f);
     return PreservedAnalyses::all();
   }
 
@@ -50,19 +27,17 @@ struct HelloWorld : PassInfoMixin<HelloWorld> {
   // all functions with optnone.
   static bool isRequired() { return true; }
 };
+
 } // namespace
 
-//-----------------------------------------------------------------------------
-// New PM Registration
-//-----------------------------------------------------------------------------
 llvm::PassPluginLibraryInfo getHelloWorldPluginInfo() {
   return {LLVM_PLUGIN_API_VERSION, "HelloWorld", LLVM_VERSION_STRING,
-          [](PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, FunctionPassManager &FPM,
+          [](PassBuilder &pb) {
+            pb.registerPipelineParsingCallback(
+                [](StringRef name, FunctionPassManager &fpm,
                    ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "hello-world") {
-                    FPM.addPass(HelloWorld());
+                  if (name == "hello-world") {
+                    fpm.addPass(HelloWorld());
                     return true;
                   }
                   return false;
